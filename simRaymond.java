@@ -169,16 +169,31 @@ class Mediator extends Thread implements MessageType, SimLoad, Debug {
 		System.out.println("Number of messages per request: " + (double)messageCnt/requestCnt);
 		System.out.println("Number of token passes: " + tokenCnt);
 		System.out.println("Number of token passes per critical section: " + (double)tokenCnt/requestCnt);
-
-		if (simLoad == LOW)
-			logPW.print("LOW, ");
-		else if (simLoad == MED)
-			logPW.print("MED, ");
-		else if (simLoad == HIGH)
-			logPW.print("HIGH, ");
-		logPW.println(nodeCnt + ", " + (double)messageCnt/requestCnt);
-		logPW.close();
 	}
+
+	//writeStats
+	//In: void
+	//Out: void
+	//Write all the nodes and critical section stats
+	private void writeStats() {
+		logPW.print("Load: ");
+		if (simLoad == LOW)
+			logPW.println("LOW");
+		else if (simLoad == MED)
+			logPW.println("MED");
+		else if (simLoad == HIGH)
+			logPW.println("HIGH");
+
+		logPW.println("Number of nodes: " + nodeCnt);
+		logPW.println("Number of critical section: " + requestCnt);
+		logPW.println("Number of critical sections serviced: " + servicedCSCnt);
+		logPW.println("Number of messages: " + messageCnt);
+		logPW.println("Number of messages per request: " + (double)messageCnt/requestCnt);
+		logPW.println("Number of token passes: " + tokenCnt);
+		logPW.println("Number of token passes per critical section: " + (double)tokenCnt/requestCnt);
+		
+		logPW.close();
+	}	
 
 	//run
 	//In: void
@@ -255,6 +270,7 @@ class Mediator extends Thread implements MessageType, SimLoad, Debug {
 		}
 		medSetAllDone();
 		showStats();
+		writeStats();
 	}//run
 }
 
