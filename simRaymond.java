@@ -195,6 +195,59 @@ class Mediator extends Thread implements MessageType, SimLoad, Debug {
 		logPW.close();
 	}	
 
+	private synchronized void processMessageQList(){
+		Node sender;
+		Node receiver;
+
+		if (getMessageQSize() != 0) {
+			currentMessage = messageQList.removeFirst();
+			sender = currentMessage.sender;
+			receiver = currentMessage.receiver;
+			
+			switch (currentMessage.message) {
+				case REQUEST_CS:
+					System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
+						" requested the CS, " + (requestCnt - servicedCSCnt) + " Pending");
+					sender.enqueue(sender);
+					sender.assignPrivilege();
+					sender.makeRequest();
+					requestCnt++;
+					break;
+				
+				case PASS_REQUEST:
+					System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
+										" sent request to " + receiver.getID());
+					receiver.enqueue(sender);
+					receiver.assignPrivilege();
+					receiver.makeRequest();
+					messageCnt++;
+					break;
+
+				case PASS_TOKEN:
+					System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
+										" passed the token to " + receiver.getID());
+					receiver.ptrUpdate();
+					receiver.assignPrivilege();
+					receiver.makeRequest();
+					messageCnt++;
+					tokenCnt++;
+					break;
+
+				case EXIT_CS:
+					System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
+										" exited the CS ");
+					sender.clearUsing();
+					sender.assignPrivilege();
+					sender.makeRequest();
+					servicedCSCnt++;
+					break;
+
+				default:
+					System.out.println("Unknow message type found");
+			}//switch
+		}//if
+	}//processMessageQList
+
 	//run
 	//In: void
 	//Out: void
@@ -202,10 +255,6 @@ class Mediator extends Thread implements MessageType, SimLoad, Debug {
 	//this is the function that is run.
 	//This funtion will pop a message and service it.
 	public void run() {
-
-		Node sender;
-		Node receiver;
-
 		if (DEBUG) {	
 			synchronized(this){
 			System.out.println(System.currentTimeMillis() + ":----Mediator Unpaused----"); 
@@ -217,62 +266,16 @@ class Mediator extends Thread implements MessageType, SimLoad, Debug {
 		}
 
 		while(getNodeDoneListSize() != nodeCnt || getMessageQSize() != 0) {
-			if (getMessageQSize() != 0) {
-				currentMessage = messageQList.removeFirst();
-				sender = currentMessage.sender;
-				receiver = currentMessage.receiver;
-				
-				switch (currentMessage.message) {
-					case REQUEST_CS:
-						System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
-							" requested the CS, " + (requestCnt - servicedCSCnt) + " Pending");
-						sender.enqueue(sender);
-						sender.assignPrivilege();
-						sender.makeRequest();
-						requestCnt++;
-						break;
-					
-					case PASS_REQUEST:
-						System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
-											" sent request to " + receiver.getID());
-						receiver.enqueue(sender);
-						receiver.assignPrivilege();
-						receiver.makeRequest();
-						messageCnt++;
-						break;
-    
-					case PASS_TOKEN:
-						System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
-											" passed the token to " + receiver.getID());
-						receiver.ptrUpdate();
-						receiver.assignPrivilege();
-						receiver.makeRequest();
-						messageCnt++;
-						tokenCnt++;
-						break;
-    
-					case EXIT_CS:
-						System.out.println(System.currentTimeMillis() + ": " + sender.getID() + 
-											" exited the CS ");
-						sender.clearUsing();
-						sender.assignPrivilege();
-						sender.makeRequest();
-						servicedCSCnt++;
-						break;
-
-					default:
-						System.out.println("Unknow message type found");
-				}//switch
-			}//if
+			processMessageQList();
 		}//while
 		if (DEBUG) {
 			System.out.println(System.currentTimeMillis() + ": Mediator Out of While loop");
 		}
 		medSetAllDone();
 		showStats();
-		writeStats();
 	}//run
-}
+
+}//Mediator
 
 //Node class
 //Basic operation: The main loop is wait some amount of time then
@@ -625,7 +628,6 @@ class simRaymond implements SimLoad {
 		
 		try {
 			numNode = Integer.parseInt(temp);
-			//System.out.println("numNode:" + numNode); 
 		}
 		catch (NumberFormatException e) {
 			System.out.println("INT PARSE ERROR");
@@ -644,7 +646,6 @@ class simRaymond implements SimLoad {
 			try {
 				simLoad = Integer.parseInt(temp);
 				simLoad--;
-				//System.out.println("simLoad:" + simLoad); 
 			}
 			catch (NumberFormatException e) {
 				System.out.println("\nINT PARSE ERROR");
